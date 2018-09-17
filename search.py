@@ -72,6 +72,12 @@ def tinyMazeSearch(problem):
     w = Directions.WEST
     return  [s, s, w, s, w, w, s, w]
 
+def solution(success_node, parents):
+    if not parents[success_node][0] :
+        return []
+    else:
+        return solution(parents[success_node][0], parents) + [parents[success_node][1]]
+
 def depthFirstSearch(problem):
     """
     Search the deepest nodes in the search tree first.
@@ -86,66 +92,83 @@ def depthFirstSearch(problem):
     print "Is the start a goal?", problem.isGoalState(problem.getStartState())
     print "Start's successors:", problem.getSuccessors(problem.getStartState())
     """
-    ''' "*** YOUR CODE HERE ***"
-    util.raiseNotDefined() '''
-    stack = util.Stack()
-    visited = set()
-    state = problem.getStartState()
-    stack.push((state, list(), list()))
+    init_node = problem.getStartState()
+    frontier = util.Stack()
+    explored_set = set()
+    parents = {}
 
+    frontier.push(init_node)
+    parents[init_node] = (None, None) #parent state, action
 
-    while not stack.isEmpty():
-        current_state, actions, cost = stack.pop()
-        if current_state in visited:
-            continue
-        visited.add(current_state)
-        if problem.isGoalState(current_state):
-            return actions
-        for pos, dir, step in problem.getSuccessors(current_state):
-            stack.push((pos, actions + [dir], cost + [step]))
+    if problem.isGoalState(init_node): return solution(init_node, parents) 
+    while True:
+        if frontier.isEmpty(): return None
+        current_node = frontier.pop()
+        explored_set.add(current_node) #add (state, action, cost) to explored
+        if problem.isGoalState(current_node): return solution(current_node, parents)
+
+        available_actions = problem.getSuccessors(current_node)
+        #print available_actions
+        for action in available_actions:
+            child_node = action[0]
+            if not (child_node in explored_set):
+                parents[child_node] = (current_node, action[1])
+                frontier.push(child_node)
 
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
-    # "*** YOUR CODE HERE ***"
-    # util.raiseNotDefined()
-    queue = util.Queue()
-    visited = set()
-    state = problem.getStartState()
-    queue.push((state, list()))
+    init_node = problem.getStartState()
+    frontier = util.Queue()
+    explored_set = set()
+    visited_set = set()
+    parents = {}
 
+    frontier.push(init_node)
+    parents[init_node] = (None, None) #parent state, action
 
-    while not queue.isEmpty():
-        current_state, actions = queue.pop()
-        if current_state in visited:
-            continue
-        visited.add(current_state)
-        if problem.isGoalState(current_state):
-                return actions
-        for pos, dir, steps in problem.getSuccessors(current_state):
-            if not pos in visited:
-                queue.push((pos, actions + [dir]))
+    if problem.isGoalState(init_node): return solution(init_node, parents) 
+    while True:
+        if frontier.isEmpty(): return None
+        current_node = frontier.pop()
+        explored_set.add(current_node) #add (state, action, cost) to explored
+        if problem.isGoalState(current_node): return solution(current_node, parents)
+
+        available_actions = problem.getSuccessors(current_node)
+        for action in available_actions:
+            child_node = action[0]
+            if not (child_node in explored_set or child_node in visited_set):
+                parents[child_node] = (current_node, action[1])
+                visited_set.add(child_node)
+                frontier.push(child_node)
 
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
-    # "*** YOUR CODE HERE ***"
-    # util.raiseNotDefined()
+    init_node = problem.getStartState()
+    frontier = util.PriorityQueue()
+    explored_set = set()
+    parents = {}
+    distance_from_start = {}
 
-    queue = util.PriorityQueue()
-    visited = set()
-    state = problem.getStartState()
-    queue.push((state, list()),0)
+    frontier.push(init_node, 0)
+    parents[init_node] = (None, None) #parent state, action
+    distance_from_start[init_node] = 0
 
-    while not queue.isEmpty():
-        current_state, actions = queue.pop()
-        if current_state in visited:
-            continue
-        visited.add(current_state)
-        if problem.isGoalState(current_state):
-            return actions
-        for pos, dir, steps in problem.getSuccessors(current_state):
-            if not pos in visited:
-                queue.push((pos, actions + [dir]), problem.getCostOfActions(actions +[dir]))
+    while True:
+        if frontier.isEmpty(): return None
+        current_node = frontier.pop()
+        explored_set.add(current_node) #add (state, action, cost) to explored
+        if problem.isGoalState(current_node): return solution(current_node, parents)
 
+        available_actions = problem.getSuccessors(current_node)
+        for action in available_actions:
+            child_node = action[0]
+            child_action = action[1]
+            child_cost = distance_from_start[current_node] + action[2]
+            if not (child_node in explored_set):
+                if not child_node in distance_from_start or distance_from_start[child_node] > child_cost:
+                    parents[child_node] = (current_node, child_action)
+                    distance_from_start[child_node] = child_cost
+                    frontier.update(child_node, child_cost)
 
 def nullHeuristic(state, problem=None):
     """
@@ -156,26 +179,36 @@ def nullHeuristic(state, problem=None):
 
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
-    # "*** YOUR CODE HERE ***"
-    # util.raiseNotDefined()
-    queue = util.PriorityQueue()
-    visited = set()
-    state = problem.getStartState()
-    queue.push((state, list(),0), 0)
+    init_node = problem.getStartState()
+    frontier = util.PriorityQueue()
+    explored_set = set()
+    parents = {}
+    g_distance_from_start = {}
 
-    while not queue.isEmpty():
-        current_state, actions, cost = queue.pop()
-        if current_state in visited:
-            continue
-        visited.add(current_state)
-        if problem.isGoalState(current_state):
-            return actions
-        for pos, dir, step_cost in problem.getSuccessors(current_state):
-            if not pos in visited:
-                total_cost= cost+step_cost
-                queue.push((pos, actions + [dir], total_cost),total_cost+ heuristic(pos,problem))
+    frontier.push(init_node, 0)
+    parents[init_node] = (None, None) #parent state, action
+    g_distance_from_start[init_node] = 0
 
-    
+    while True:
+        if frontier.isEmpty(): return None
+        current_node = frontier.pop()
+
+        if problem.isGoalState(current_node): return solution(current_node, parents)
+        explored_set.add(current_node) #add (state, action, cost) to explored
+
+        available_actions = problem.getSuccessors(current_node)
+        for action in available_actions:
+            child_node = action[0]
+            child_action = action[1]
+            child_cost = g_distance_from_start[current_node] + action[2]
+            if not (child_node in explored_set):
+                if not child_node in g_distance_from_start or g_distance_from_start[child_node] > child_cost:
+                    parents[child_node] = (current_node, child_action)
+                    g_distance_from_start[child_node] = child_cost
+                    cost = child_cost + heuristic(child_node, problem)
+                    
+                    frontier.update(child_node, cost)
+
 
 # Abbreviations
 bfs = breadthFirstSearch
